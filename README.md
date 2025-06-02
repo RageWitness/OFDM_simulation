@@ -169,8 +169,9 @@ Please follow these steps:
     * Open a Pull Request.
 
 ---
-## 致谢
+## 致谢（Thanks)
 ZCL博士的博客： [LTE物理层技术概要](https://zlearning.netlify.app/lte/physical/lte-physical-overview)
+ZCL Phd. 's Blog [LTE物理层技术概要](https://zlearning.netlify.app/lte/physical/lte-physical-overview)
 ## 许可证 (License)
 
 本项目采用 MIT 许可证。更多详情请参见 `LICENSE` 文件（如果存在）。
