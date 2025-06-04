@@ -33,8 +33,8 @@ Below is a list of all files in this project and their primary functions. For de
     * This function calculates and provides the subcarrier symbol mapping positions for mathematical sequences, ensuring that data or pilots are correctly mapped to active subcarriers in an OFDM system.
 * `addAWGN.m`: 此函数用于给输入的信号添加指定信噪比（SNR）的加性高斯白噪声（AWGN），模拟实际通信中的噪声影响.
     * This function adds Additive White Gaussian Noise (AWGN) with a specified Signal-to-Noise Ratio (SNR) to the input signal, simulating the effects of noise in real communication.
-* `buildPreamble.m`: 负责生成符合Schmidl-Cox类型的前导码，并包含循环前缀（CP）。它支持不同的CP模式和PN序列配置，用于接收端的同步和信道估计.
-    * This function generates a Schmidl-Cox type preamble, including a Cyclic Prefix (CP). It supports different CP modes and PN sequence configurations, used for synchronization and channel estimation at the receiver.
+* `buildPreamble.m`: 负责生成符合Schmidl-Cox类型的前导码，并包含循环前缀（CP）。它支持不同的CP模式和PN序列配置，用于接收端的符号定时同步.
+    * This function generates a Schmidl-Cox type preamble, including a Cyclic Prefix (CP). It supports different CP modes and PN sequence configurations, used for Symbol timing synchronization at the receiver.
 * `decodeAndCalcBER.m`: 该函数在接收端执行比特解码（如果启用信道编码，如重复码），并计算接收到的比特流与原始发送比特流之间的误码率（BER）.
     * This function performs bit decoding at the receiver (if channel coding, such as repetition code, is enabled) and calculates the Bit Error Rate (BER) between the received bit stream and the original transmitted bit stream.
 * `demapQPSK.m`: 用于对接收到的QPSK复数符号序列进行解映射，将其转换回原始的二进制比特流.
