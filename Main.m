@@ -1,19 +1,19 @@
 % --- 主仿真脚本 ---
 clear;  clc; close all;
 %% 1. 配置输入参数
-Nsc     =300;          % 实际工作子载波数 12(12个子载波效果极差，几乎不可用） 72 180 300 600可选 900 1200应该也是可以（对于此函数）
+Nsc     =600;          % 实际工作子载波数 12(12个子载波效果极差，几乎不可用） 72 180 300 600可选 900 1200应该也是可以（对于此函数）
 cpMode  = "normal";    % 前导码形制选择"normal" 或 "extended"
 pnSeed  = 20250601;    % 前导码随机种子 (也可以换成长度 = Nfft/2 的 PN 向量)
 zeroDC  = false;        % 是否把直流子载波置零 true ,false
 codingEn   =false;        % 是否使用重复码, true ,false
-leaverEn  =true;          % 是否交织, true ,false
+leaverEn  =false;          % 是否交织, true ,false
 delta_f = 15e3;         %子载波间隔固定15K
 estimationAndEqEnabled = true;%逻辑值 (true/false), 控制是否执行信道估计和均衡
 N_FFT = 2^nextpow2(Nsc);           % FFT点数
 fs_current = N_FFT * delta_f;  %当前系统采样率
-channelType = 'EVA70';    % 选择信道类型并仿真 支持ETU70,EVA70,EPA5;EVA5,ETU300也兼容.EPA5是衰落最小的，ETU30最坏甚至不可用
+channelType = 'ETU300';    % 选择信道类型并仿真 支持ETU70,EVA70,EPA5;EVA5,ETU300也兼容.EPA5是衰落最小的，ETU300最坏甚至不可用
 simulationSeedBase = 456;   % 信道基础种子
-snr_value_dB = 0; % AWGN的信噪比
+snr_value_dB = 25; % AWGN的信噪比
 
 %% 2. 前导码生成
 %调用 buildPreamble
@@ -282,7 +282,10 @@ grid on;
                                                               cpMode, ...
                                                               fs_current, ...
                                                               63);
-%-----频域估计与均衡
+
+
+
+%-----频域估计与均衡的符号类型标识准备--------
 numDataSyms = 50;
 pilotInterval = 4; % 每4个数据符号一组
 symbolTypes = generateSymbolTypeSequence(numDataSyms, pilotInterval);
@@ -291,14 +294,45 @@ fprintf('导频数量: %d, 数据符号数量: %d, 总符号数: %d\n', ...
         sum(symbolTypes=="Pilot"), sum(symbolTypes=="Data"), length(symbolTypes));
 % 期望输出：导频数量: 13, 数据符号数量: 50, 总符号数: 63
 active_indices_human_order = active_indices_human_orderf(N_FFT ,Nsc);
-%频域信道估计与均衡
+
+
+%-------去CP之后、"频域估计与均衡"之前 :信道均衡前等化后的每个数据符号在各个激活子载波上的幅度（以 dB 为单位）随时间（符号序号）和频率（子载波序号的分布情况--
+% 0) 做 N_FFT 点 FFT（沿第 1 维，对每个符号）
+clims = [ -45 30 ];
+X = fft(ofdmSymbolsUseful, N_FFT, 1);
+
+% 1) 把直流（DC）移到矩阵正中间
+Xc = fftshift(X, 1);
+
+% 2) 找出 Data 符号的列索引
+dataCols = (symbolTypes=="Data");   % 50 列
+
+% 3) 截取中间连续的 Nsc 行（因为我们确实在中心对称激活了 Nsc 个子载波）
+centerBin = N_FFT/2 + 1;
+halfNsc   = Nsc/2;
+startBin  = centerBin - halfNsc;
+endBin    = centerBin + halfNsc - 1;
+rawActive = Xc(startBin:endBin, dataCols);
+
+% 4) 画“未均衡瀑布”
+figure;
+imagesc(20*log10(abs(rawActive)),clims);
+colormap(turbo);
+
+axis xy;
+xlabel('Data-symbol index');
+ylabel('Sub-carrier index');
+title('Raw magnitude before EQ (dB)');
+colorbar;
+
+%-------开始频域信道估计与均衡----------
 [demapperInputSymbolsMatrix, channelEstimatesForDataSymbols] = performFreqDomainProcessing(ofdmSymbolsUseful,  ...
                                                                                              symbolTypes,  ...
                                                                                              pilotSequence,  ...
                                                                                              active_indices_human_order,  ...
                                                                                              N_FFT, Nsc,  ...
                                                                                              noiseTermForMMSE,  ...
-                                                                                             estimationAndEqEnabled);
+                                                                                            estimationAndEqEnabled);
 % demapperInputSymbolsMatrix 是一个 N_sc x numDataSymbols 的矩阵
 % 每一列是一个OFDM数据符号在激活子载波上的均衡后符号
 % 将矩阵按列优先的顺序转换为一个长列向量
@@ -310,12 +344,19 @@ serialized_equalized_symbols = demapperInputSymbolsMatrix(:);
 
 % 现在 serialized_equalized_symbols 就是可以送给QPSK解调器的串行符号流了
 % recovered_bits = qamdemod(serialized_equalized_symbols, 4, 'OutputType','bit', 'UnitAveragePower',true); 
-% (注意：qamdemod 的参数需要与你使用的 qammod 对应，特别是关于平均功率)
-% —— 1. 水平瀑布图 —— 
+% (注意：qamdemod 的参数需要与使用的 qammod 对应，特别是关于平均功率)
+% ----------均衡后：水平瀑布图
 figure;
-imagesc(20*log10(abs(demapperInputSymbolsMatrix))); axis xy;
+imagesc(20*log10(abs(demapperInputSymbolsMatrix)),clims); axis xy;
+colormap(turbo);
 xlabel('Data-symbol index'); ylabel('Sub-carrier index');
 title('Equalised magnitude (dB)'); colorbar;
+% 
+% figure;
+% imagesc(20*log10(abs(ofdmSymbolsUseful))); axis xy;
+% xlabel('Data-symbol index'); ylabel('Sub-carrier index');
+% title('Equalised magnitude (dB) (not Eq)'); colorbar;
+
 
 % —— 2. 星座 —— 
 figure; scatter(real(demapperInputSymbolsMatrix(:)), ...
