@@ -1,17 +1,17 @@
 % --- 主仿真脚本 ---
 clear;  clc; close all;
 %% 1. 配置输入参数
-Nsc     =600;          % 实际工作子载波数 12(12个子载波效果极差，几乎不可用） 72 180 300 600可选 900 1200应该也是可以（对于此函数）
+Nsc     =1200;          % 实际工作子载波数 12(12个子载波效果极差，几乎不可用） 72 180 300 600可选 900 1200应该也是可以（对于此函数）
 cpMode  = "normal";    % 前导码形制选择"normal" 或 "extended"
 pnSeed  = 20250601;    % 前导码随机种子 (也可以换成长度 = Nfft/2 的 PN 向量)
 zeroDC  = false;        % 是否把直流子载波置零 true ,false
-codingEn   =false;        % 是否使用重复码, true ,false
-leaverEn  =false;          % 是否交织, true ,false
+codingEn   =true;        % 是否使用重复码, true ,false
+leaverEn  =true;          % 是否交织, true ,false
 delta_f = 15e3;         %子载波间隔固定15K
 estimationAndEqEnabled = true;%逻辑值 (true/false), 控制是否执行信道估计和均衡
 N_FFT = 2^nextpow2(Nsc);           % FFT点数
 fs_current = N_FFT * delta_f;  %当前系统采样率
-channelType = 'ETU300';    % 选择信道类型并仿真 支持ETU70,EVA70,EPA5;EVA5,ETU300也兼容.EPA5是衰落最小的，ETU300最坏甚至不可用
+channelType = 'EVA70';    % 选择信道类型并仿真 支持ETU70,EVA70,EPA5;EVA5,ETU300也兼容.EPA5是衰落最小的，ETU300最坏甚至不可用
 simulationSeedBase = 456;   % 信道基础种子
 snr_value_dB = 25; % AWGN的信噪比
 
@@ -97,6 +97,46 @@ faxis = linspace(-meta.fs_hz/2, meta.fs_hz/2, nfftPlot)/1e6; % MHz
 plot(faxis, Pxx);
 title('帧整体功率谱');
 xlabel('Frequency (MHz)'); ylabel('Magnitude (dB)'); grid on;
+
+% ------ 数据标识生成-------
+numDataSyms   = 50;    % 和接收端保持一致
+pilotInterval = 4;     % 每 4 个数据符号插一个导频
+symbolTypes   = generateSymbolTypeSequence(numDataSyms, pilotInterval);
+% ------ 发射端原始帧的瀑布（Tx, 不含信道或噪声） ------
+% tdFrame 是 generateOFDMDataFrame 返回的、已经插入 CP 的时域 OFDM 符号序列
+
+% 1) 去掉 CP （得到每个符号纯 N_FFT 点）
+numSyms = meta.numTotalOFDMSymbolsInFrame;  
+[txSymsNoCP, ~, ~] = removeCPForEachSymbol( tdFrame(:), ...
+                                            N_FFT, ...
+                                            cpMode, ...
+                                            fs_current, ...
+                                            numSyms );
+% 2) FFT + fftshift
+X_tx   = fft( txSymsNoCP, N_FFT, 1 );
+Xc_tx  = fftshift( X_tx, 1 );
+
+% 3) 截取中间连续的 Nsc 行
+centerBin = N_FFT/2 + 1;
+halfNsc   = Nsc/2;
+startBin  = centerBin - halfNsc;
+endBin    = centerBin + halfNsc - 1;
+txActive  = Xc_tx(startBin:endBin, :);  
+
+% 4) 只画 Data 符号（如果想要所有符号可以去掉这一步）
+dataCols  = (symbolTypes=="Data");  
+
+% 5) 绘图
+clims = [-45 30];    % 同前面保持一致
+figure;
+imagesc( 20*log10(abs( txActive(:,dataCols ))), clims );
+axis xy;
+colormap(turbo);    % 或者你喜欢的 colormap
+colorbar;
+xlabel('Data-symbol index');
+ylabel('Sub-carrier index');
+title('Original Tx magnitude before channel (dB)');
+
 
 %% 4.合并前导码与OFDM调制符号
 % 以下变量已经通过调用相应的函数生成：
@@ -382,12 +422,5 @@ end
 codeRateR = 1/3;                        % 与发射端一致
 [rxBitsDec , BER1, errs1, N1] = decodeAndCalcBER(demappedBits, srcBits, codingEn, codeRateR);  % codingIsEnabled = true 
                                                                          
-
-
-
-
-
-
-
 
 
