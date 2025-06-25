@@ -98,3 +98,16 @@ figure;
 semilogy(SNRdB_vec, BER_vec,'o-','LineWidth',1.4);
 grid on; xlabel('SNR (dB)'); ylabel('BER');
 title(sprintf('BER vs SNR   (N_{SC}=%d, %s)', Nsc, channelType));
+% ------若要画未启用和启用信道估计与均衡的对比图请按以下步骤：-------
+%1.删掉此脚本的clear选项 2.运行不启用估计与编码的参数 3.工作区中找到BER_vec选项并右键生成副本"BER_vecCopy"
+%4.启用信道估计与均衡并把下面取消注释，运行一次此脚本
+% figure;
+% semilogy(SNRdB_vec, BER_vec,    'r-o', 'LineWidth',1.4);  % 红色：启用信道估计与均衡
+% hold on;
+% semilogy(SNRdB_vec, BER_vecCopy,'b-s', 'LineWidth',1.4);  % 蓝色：未启用估计与均衡
+% grid on;
+% xlabel('SNR (dB)');
+% ylabel('BER');
+% legend('启用信道估计与均衡','未启用估计与均衡','Location','best');
+% title(sprintf('BER vs SNR   (N_{SC}=%d, %s)', Nsc, channelType));
+% hold off;
