@@ -86,10 +86,10 @@ This project primarily relies on the MATLAB environment and its built-in functio
 
 * **Communications Toolbox™**: 用于 `awgn` (在 `addAWGN.m` 中), `qammod`, `qamdemod` (在 `generateOFDMDataFrame.m` 和 `demapQPSK.m` 中).
     * Used for `awgn` (in `addAWGN.m`), `qammod`, `qamdemod` (in `generateOFDMDataFrame.m` and `demapQPSK.m`).
-* **LTE Toolbox™**: 可能用于某些符合LTE标准的信道模型功能 (例如在 `simulateUsingLTEFadingChannel.m` 中)，或者处理LTE特定的信号结构.
-    * Potentially used for certain LTE-compliant channel model functionalities (e.g., in `simulateUsingLTEFadingChannel.m`) or for processing LTE-specific signal structures.
-* **DSP System Toolbox™**: 可能用于信号处理、滤波或FFT/IFFT等优化功能.
-    * Potentially used for signal processing, filtering, or optimized FFT/IFFT functions.
+* **LTE Toolbox™**: 用于某些符合LTE标准的信道模型功能 (例如在 `simulateUsingLTEFadingChannel.m` 中)，或者处理LTE特定的信号结构.
+    * Used for certain LTE-compliant channel model functionalities (e.g., in `simulateUsingLTEFadingChannel.m`) or for processing LTE-specific signal structures.
+* **DSP System Toolbox™**: 用于信号处理、滤波或FFT/IFFT等优化功能.
+    * Used for signal processing, filtering, or optimized FFT/IFFT functions.
 
 请确保您的 MATLAB 环境已安装并激活了上述工具箱。
 
